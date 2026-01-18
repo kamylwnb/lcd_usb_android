@@ -1,36 +1,48 @@
-<hr style="margin:40px 0;">
+# 🖥️ RPi Pico - Zdalny Ekran USB (usbscreen)
 
-    <h2>📱 Aplikacja Mobilna (Android APK)</h2>
-    <div class="info">
-        <strong>Szybki start:</strong> Możesz podglądać ekran swojego urządzenia bezpośrednio na smartfonie! Aplikacja działa z dowolnym mikrokontrolerem wysyłającym dane w formacie HEX (np. RPi Pico, Arduino, ESP32).
-    </div>
+System umożliwiający przesyłanie zawartości wyświetlacza Twojego urządzenia bezpośrednio na ekran telefonu Android lub komputera PC.
 
-    <h3>Jak połączyć urządzenie z telefonem:</h3>
-    <ol>
-        <li><strong>Pobierz aplikację:</strong> Ściągnij plik <code>usbscreen_remote.apk</code> z sekcji wydań (Releases) na tym GitHubie i zainstaluj go na swoim telefonie.</li>
-        <li><strong>Użyj kabla OTG:</strong> Podłącz swoje Raspberry Pi Pico (lub inne urządzenie) do telefonu za pomocą przejściówki <strong>USB OTG</strong>.</li>
-        <li><strong>Uruchom i połącz:</strong>
-            <ul>
-                <li>Otwórz aplikację.</li>
-                <li>Kliknij przycisk <b>"Połącz / Connect"</b>.</li>
-                <li>Zezwól aplikacji na dostęp do urządzenia USB w wyskakującym okienku Androida.</li>
-                <li>Ustaw prędkość na <b>115200 baud</b>.</li>
-            </ul>
-        </li>
-        <li><strong>Działaj!</strong> Jeśli Twoje urządzenie wysyła ramki <code>SCRN:...</code>, obraz natychmiast pojawi się na wyświetlaczu telefonu.</li>
-    </ol>
+---
 
-    <div class="warning">
-        <strong>💡 Pro tip:</strong> Aplikacja jest uniwersalna. Choć polecamy <strong>RPi Pico</strong> ze względu na wydajność, możesz użyć dowolnego modułu, który potrafi wysyłać tekst przez Serial. Pamiętaj tylko o wspólnej masie (GND) i poprawnym standardzie napięć (3.3V dla Pico).
-    </div>
+## 📱 Aplikacja Mobilna (Android)
 
-    <h3>Dlaczego warto używać trybu USB Screen?</h3>
-    <ul>
-        <li><strong>Debugowanie:</strong> Widzisz co dzieje się na ekranie, nawet jeśli nie masz fizycznego wyświetlacza ST7565 pod ręką.</li>
-        <li><strong>Prezentacje:</strong> Możesz pokazać działanie swojego projektu na dużym ekranie telefonu lub rzutniku (przez telefon).</li>
-        <li><strong>Zdalne sterowanie:</strong> Idealne do testowania interfejsu użytkownika i menu bez patrzenia na mały ekranik urządzenia.</li>
-    </ul>
+Dzięki tej aplikacji Twój telefon staje się bezprzewodowym (lub przewodowym przez USB) monitorem dla Twojego projektu.
 
-    <p style="text-align: center; margin-top: 30px;">
-        <a href="usbscreen_remote.apk" style="background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">📥 Pobierz aplikację .APK</a>
-    </p>
+### 📥 Instalacja
+1. **Pobierz APK:
+2. **Zainstaluj:** Otwórz pobrany plik na telefonie (może być wymagana zgoda na "Instalację z nieznanych źródeł").
+3. **Połącz:** - Użyj adaptera **USB OTG**, aby połączyć Pico z telefonem.
+   - W aplikacji kliknij przycisk **"Connect"**.
+   - Wybierz prędkość **115200 baud**.
+
+
+
+---
+
+## 🛠️ Instrukcja wysyłania obrazu (C++)
+
+Aplikacja nasłuchuje na porcie szeregowym linii zaczynających się od słowa kluczowego `SCRN:`. Po nim następuje 1024 bajty Twojego ekranu zamienione na tekst HEX.
+
+### 1. Dodaj funkcję do swojego projektu
+Skopiuj ten kod do pliku, w którym obsługujesz ekran (np. `ekran.cpp`):
+
+```cpp
+void send_screen_buffer_usb() {
+    // Sprawdź czy funkcja jest aktywna (opcjonalne)
+    if (!remote_display_on) return; 
+
+    // Odwołanie do bufora graficznego (128x64 px = 1024 bajty)
+    extern uint8_t ST7565_buffer[1024]; 
+    
+    // Wysłanie nagłówka
+    printf("SCRN:"); 
+    
+    // Konwersja bufora na tekst HEX i wysyłka przez USB
+    for (int i = 0; i < 1024; i++) {
+        printf("%02X", ST7565_buffer[i]);
+    }
+    
+    // Znak końca linii informuje aplikację o pełnej klatce
+    printf("\n");
+    fflush(stdout);
+}
